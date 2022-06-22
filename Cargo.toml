@@ -1,0 +1,19 @@
+[package]
+name = "murdock-cli"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+anyhow = "1.0.57"
+chrono = "0.4.19"
+clap = { version = "3.2.6", features = ["cargo"] }
+derive_builder = "0.11.2"
+indexmap = { version = "1.9.1", features = ["serde"] }
+openapi = { path = "./api" }
+platform-dirs = "0.3.0"
+reqwest = { version = "0.11.11", features = ["blocking"] }
+serde = { version = "1.0.137", features = ["derive"] }
+serde_yaml = "0.8.24"
+tokio = { version = "1.19.2", features = ["full"] }
