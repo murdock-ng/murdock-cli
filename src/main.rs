@@ -13,7 +13,7 @@ fn clap() -> clap::Command<'static> {
     Command::new("murdock-cli")
         .version(crate_version!())
         .author("Kaspar Schleiser <kaspar@schleiser.de>")
-        .about("Build a lot, fast")
+        .about("Murdock API CLI client")
         .infer_subcommands(true)
         .arg_required_else_help(true)
         .arg(
@@ -22,6 +22,7 @@ fn clap() -> clap::Command<'static> {
                 .short('c')
                 .long("config")
                 .value_name("FILE")
+                .env("MURDOCK_CLI_CONFIG")
                 .value_parser(clap::builder::NonEmptyStringValueParser::new()),
         )
         .subcommand(
@@ -113,7 +114,7 @@ fn clap() -> clap::Command<'static> {
         )
         .subcommand(
             Command::new("jobs")
-                .about("manage jobs")
+                .about("manage multiple jobs")
                 .arg_required_else_help(true)
                 .infer_subcommands(true)
                 .subcommand(
@@ -124,6 +125,7 @@ fn clap() -> clap::Command<'static> {
                                 .long("server")
                                 .takes_value(true)
                                 .value_name("SERVER")
+                                .env("MURDOCK_CLI_SERVER")
                                 .help("server name (default: use configured one)"),
                         )
                         .arg(

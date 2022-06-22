@@ -8,7 +8,7 @@ edition = "2021"
 [dependencies]
 anyhow = "1.0.57"
 chrono = "0.4.19"
-clap = { version = "3.2.6", features = ["cargo"] }
+clap = { version = "3.2.6", features = ["cargo", "env"] }
 derive_builder = "0.11.2"
 indexmap = { version = "1.9.1", features = ["serde"] }
 openapi = { path = "./api" }
