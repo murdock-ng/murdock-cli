@@ -1,8 +1,8 @@
 use anyhow::Result;
 use chrono::NaiveDate;
 
-use openapi;
-use openapi::apis::configuration::{ApiKey, Configuration};
+use murdock_api;
+use murdock_api::apis::configuration::{ApiKey, Configuration};
 
 pub struct Murdock {
     configuration: Configuration,
@@ -25,10 +25,12 @@ impl Murdock {
         &self,
         before: NaiveDate,
     ) -> Result<
-        Vec<openapi::models::JobModel>,
-        openapi::apis::Error<openapi::apis::jobs_api::FinishedJobDeleteHandlerJobsDeleteError>,
+        Vec<murdock_api::models::JobModel>,
+        murdock_api::apis::Error<
+            murdock_api::apis::jobs_api::FinishedJobDeleteHandlerJobsDeleteError,
+        >,
     > {
-        use openapi::apis::jobs_api::finished_job_delete_handler_jobs_delete;
+        use murdock_api::apis::jobs_api::finished_job_delete_handler_jobs_delete;
         finished_job_delete_handler_jobs_delete(
             &self.configuration,
             &before.format("%Y-%m-%d").to_string(),
