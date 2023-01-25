@@ -5,11 +5,11 @@ use anyhow::{anyhow, Context, Error, Result};
 mod config;
 mod murdock;
 
-use clap::{crate_version, Arg, ArgGroup, ArgMatches, Command};
+use clap::{crate_version, Arg, ArgAction, ArgGroup, ArgMatches, Command};
 
 use config::{Config, Server};
 
-fn clap() -> clap::Command<'static> {
+fn clap() -> clap::Command {
     Command::new("murdock-cli")
         .version(crate_version!())
         .author("Kaspar Schleiser <kaspar@schleiser.de>")
@@ -18,7 +18,6 @@ fn clap() -> clap::Command<'static> {
         .arg_required_else_help(true)
         .arg(
             Arg::new("config")
-                .takes_value(true)
                 .short('c')
                 .long("config")
                 .value_name("FILE")
@@ -35,14 +34,14 @@ fn clap() -> clap::Command<'static> {
                     Command::new("add")
                         .arg(
                             Arg::new("name")
-                                .takes_value(true)
+                                .action(ArgAction::Set)
                                 .value_name("NAME")
                                 .required(true)
                                 .help("some name to reference this server"),
                         )
                         .arg(
                             Arg::new("url")
-                                .takes_value(true)
+                                .action(ArgAction::Set)
                                 .value_name("URL")
                                 .required(true)
                                 .help("URL where this server is reachable"),
@@ -51,13 +50,14 @@ fn clap() -> clap::Command<'static> {
                             Arg::new("token")
                                 .short('t')
                                 .long("token")
-                                .takes_value(true)
+                                .action(ArgAction::Set)
                                 .value_name("TOKEN")
                                 .help("optional github token"),
                         )
                         .arg(
                             Arg::new("default")
                                 .help("set as default server")
+                                .action(ArgAction::SetTrue)
                                 .short('d')
                                 .long("default"),
                         ),
@@ -66,7 +66,7 @@ fn clap() -> clap::Command<'static> {
                     Command::new("edit")
                         .arg(
                             Arg::new("name")
-                                .takes_value(true)
+                                .action(ArgAction::Set)
                                 .value_name("NAME")
                                 .required(true)
                                 .help("server name"),
@@ -74,6 +74,7 @@ fn clap() -> clap::Command<'static> {
                         .arg(
                             Arg::new("default")
                                 .help("set as default server")
+                                .action(ArgAction::SetTrue)
                                 .short('d')
                                 .long("default"),
                         )
@@ -81,7 +82,7 @@ fn clap() -> clap::Command<'static> {
                             Arg::new("url")
                                 .short('u')
                                 .long("url")
-                                .takes_value(true)
+                                .action(ArgAction::Set)
                                 .value_name("URL")
                                 .help("URL where this server is reachable"),
                         )
@@ -89,7 +90,7 @@ fn clap() -> clap::Command<'static> {
                             Arg::new("token")
                                 .short('t')
                                 .long("token")
-                                .takes_value(true)
+                                .action(ArgAction::Set)
                                 .value_name("TOKEN")
                                 .help("optional github token"),
                         ),
@@ -97,7 +98,7 @@ fn clap() -> clap::Command<'static> {
                 .subcommand(
                     Command::new("delete").arg_required_else_help(true).arg(
                         Arg::new("name")
-                            .takes_value(true)
+                            .action(ArgAction::Set)
                             .value_name("NAME")
                             .required(true)
                             .help("delete server config"),
@@ -106,6 +107,7 @@ fn clap() -> clap::Command<'static> {
                 .subcommand(
                     Command::new("list").arg(
                         Arg::new("show_tokens")
+                            .action(ArgAction::SetTrue)
                             .short('s')
                             .long("show-tokens")
                             .help("don't hide tokens"),
@@ -123,7 +125,7 @@ fn clap() -> clap::Command<'static> {
                             Arg::new("server")
                                 .short('s')
                                 .long("server")
-                                .takes_value(true)
+                                .action(ArgAction::Set)
                                 .value_name("SERVER")
                                 .env("MURDOCK_CLI_SERVER")
                                 .help("server name (default: use configured one)"),
@@ -132,7 +134,7 @@ fn clap() -> clap::Command<'static> {
                             Arg::new("before")
                                 .short('b')
                                 .long("before")
-                                .takes_value(true)
+                                .action(ArgAction::Set)
                                 .value_name("DATE")
                                 .help("delete jobs that where created before DATE"),
                         )
@@ -140,7 +142,7 @@ fn clap() -> clap::Command<'static> {
                             Arg::new("age")
                                 .short('a')
                                 .long("age")
-                                .takes_value(true)
+                                .action(ArgAction::Set)
                                 .value_name("DAYS")
                                 .help("delete jobs that where created more than AGE days ago"),
                         )
@@ -185,7 +187,7 @@ async fn main() -> Result<(), Error> {
                 let name: &String = matches.get_one("name").unwrap();
                 let url: &String = matches.get_one("url").unwrap();
                 let token: Option<&String> = matches.get_one("token");
-                let set_default = matches.is_present("default");
+                let set_default = *matches.get_one::<bool>("default").unwrap();
 
                 if config.servers.get(name).is_some() {
                     return Err(anyhow!("server config already exists, maybe use \"edit\"?"));
@@ -211,7 +213,7 @@ async fn main() -> Result<(), Error> {
                 let name: &String = matches.get_one("name").unwrap();
                 let url: Option<&String> = matches.get_one("url");
                 let token: Option<&String> = matches.get_one("token");
-                let set_default = matches.is_present("default");
+                let set_default = *matches.get_one::<bool>("default").unwrap();
 
                 let mut server = match config.servers.get(name) {
                     Some(server) => server.clone(),
@@ -264,7 +266,7 @@ async fn main() -> Result<(), Error> {
                 }
             }
             Some(("list", matches)) => {
-                let show_tokens = matches.is_present("show_tokens");
+                let show_tokens = *matches.get_one::<bool>("show_tokens").unwrap();
 
                 for (name, server) in config.servers {
                     let is_default = config.default_server.as_ref().map_or(false, |x| x == &name);
@@ -321,4 +323,12 @@ async fn main() -> Result<(), Error> {
     }
 
     Ok(())
+}
+
+#[cfg(test)]
+mod test {
+    #[test]
+    fn test_clap() {
+        crate::clap().debug_assert();
+    }
 }
