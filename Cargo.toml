@@ -11,14 +11,14 @@ license = "Apache-2.0"
 readme = "README.md"
 
 [dependencies]
-anyhow = "1.0.58"
-chrono = "0.4.19"
-clap = { version = "3.2.6", features = ["cargo", "env"] }
-derive_builder = "0.11.2"
-indexmap = { version = "1.9.1", features = ["serde"] }
+anyhow = "1.0.68"
+chrono = "0.4.23"
+clap = { version = "4.1.0", features = ["cargo", "env"] }
+derive_builder = "0.12.0"
+indexmap = { version = "1.9.2", features = ["serde"] }
 murdock-api = { version = "1.0.0", path = "./murdock-api" }
 platform-dirs = "0.3.0"
-reqwest = { version = "0.11.11", features = ["blocking"] }
-serde = { version = "1.0.137", features = ["derive"] }
-serde_yaml = "0.8.24"
-tokio = { version = "1.19.2", features = ["full"] }
+reqwest = { version = "0.11.14", features = ["blocking"] }
+serde = { version = "1.0.152", features = ["derive"] }
+serde_yaml = "0.9.17"
+tokio = { version = "1.24.2", features = ["full"] }
