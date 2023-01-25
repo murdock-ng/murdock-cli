@@ -298,10 +298,10 @@ async fn main() -> Result<(), Error> {
                 } else {
                     let age = i64::from_str_radix(age.unwrap(), 10)
                         .context("converting age (expecting number of days)")?;
-                    Local::today()
+                    Local::now()
+                        .date_naive()
                         .checked_sub_signed(Duration::days(age))
                         .unwrap()
-                        .naive_utc()
                 };
 
                 let (_server_name, server) = get_server(&config, &matches)?;
