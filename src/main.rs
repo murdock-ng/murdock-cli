@@ -153,6 +153,31 @@ fn clap() -> clap::Command {
                         ),
                 ),
         )
+        .subcommand(
+            Command::new("job")
+                .about("manage a job")
+                .arg_required_else_help(true)
+                .infer_subcommands(true)
+                .subcommand(
+                    Command::new("abort")
+                        .arg(
+                            Arg::new("server")
+                                .short('s')
+                                .long("server")
+                                .action(ArgAction::Set)
+                                .value_name("SERVER")
+                                .env("MURDOCK_CLI_SERVER")
+                                .help("server name (default: use configured one)"),
+                        )
+                        .arg(
+                            Arg::new("uuid")
+                                .action(ArgAction::Set)
+                                .value_name("UUID")
+                                .help("job uuid")
+                                .required(true),
+                        ),
+                ),
+        )
 }
 
 fn get_server<'a>(config: &'a Config, matches: &ArgMatches) -> Result<(String, &'a Server), Error> {
@@ -181,145 +206,175 @@ async fn main() -> Result<(), Error> {
 
     let mut config = config::Config::from_file(&config_file)?;
 
-    match matches.subcommand() {
-        Some(("servers", matches)) => match matches.subcommand() {
-            Some(("add", matches)) => {
-                let name: &String = matches.get_one("name").unwrap();
-                let url: &String = matches.get_one("url").unwrap();
-                let token: Option<&String> = matches.get_one("token");
-                let set_default = *matches.get_one::<bool>("default").unwrap();
+    async fn doit(
+        matches: ArgMatches,
+        mut config: Config,
+        config_file: PathBuf,
+    ) -> Result<(), Error> {
+        match matches.subcommand() {
+            Some(("servers", matches)) => match matches.subcommand() {
+                Some(("add", matches)) => {
+                    let name: &String = matches.get_one("name").unwrap();
+                    let url: &String = matches.get_one("url").unwrap();
+                    let token: Option<&String> = matches.get_one("token");
+                    let set_default = *matches.get_one::<bool>("default").unwrap();
 
-                if config.servers.get(name).is_some() {
-                    return Err(anyhow!("server config already exists, maybe use \"edit\"?"));
-                }
-
-                let server = config::ServerBuilder::default()
-                    .url(url.clone())
-                    .token(token.map(|x| x.clone()))
-                    .build()?;
-
-                println!("murdock-cli: added server \"{name}\"");
-
-                if set_default {
-                    println!("murdock-cli: set server \"{name}\" as default");
-                    config.default_server = Some(name.clone());
-                }
-
-                config.servers.insert(name.clone(), server);
-
-                config.to_file(&config_file)?;
-            }
-            Some(("edit", matches)) => {
-                let name: &String = matches.get_one("name").unwrap();
-                let url: Option<&String> = matches.get_one("url");
-                let token: Option<&String> = matches.get_one("token");
-                let set_default = *matches.get_one::<bool>("default").unwrap();
-
-                let mut server = match config.servers.get(name) {
-                    Some(server) => server.clone(),
-                    None => return Err(anyhow!("server config not found, maybe add first?")),
-                };
-
-                let was_default = config
-                    .default_server
-                    .as_ref()
-                    .map_or(false, |x| &x == &name);
-
-                if let Some(url) = url {
-                    server.url = url.clone();
-                }
-                if let Some(token) = token {
-                    server.token = Some(token.clone());
-                }
-
-                let mut have_changes = false;
-                if let Some(previous) = config.servers.insert(name.clone(), server.clone()) {
-                    if previous != server {
-                        println!("murdock-cli: updated server \"{name}\"");
-                        have_changes = true;
+                    if config.servers.get(name).is_some() {
+                        return Err(anyhow!("server config already exists, maybe use \"edit\"?"));
                     }
-                }
 
-                if set_default && !was_default {
-                    println!("murdock-cli: set server \"{name}\" as default");
-                    config.default_server = Some(name.clone());
-                    have_changes = true;
-                }
+                    let server = config::ServerBuilder::default()
+                        .url(url.clone())
+                        .token(token.map(|x| x.clone()))
+                        .build()?;
 
-                if have_changes {
-                    config.to_file(&config_file)?;
-                }
-            }
-            Some(("delete", matches)) => {
-                let name: &String = matches.get_one("name").unwrap();
-                if let Some(_) = config.servers.remove(name) {
-                    println!("murdock-cli: removed server \"{name}\"");
-                    if config
-                        .default_server
-                        .as_ref()
-                        .map_or(false, |x| &x == &name)
-                    {
-                        config.default_server = None;
+                    println!("murdock-cli: added server \"{name}\"");
+
+                    if set_default {
+                        println!("murdock-cli: set server \"{name}\" as default");
+                        config.default_server = Some(name.clone());
                     }
+
+                    config.servers.insert(name.clone(), server);
 
                     config.to_file(&config_file)?;
                 }
-            }
-            Some(("list", matches)) => {
-                let show_tokens = *matches.get_one::<bool>("show_tokens").unwrap();
+                Some(("edit", matches)) => {
+                    let name: &String = matches.get_one("name").unwrap();
+                    let url: Option<&String> = matches.get_one("url");
+                    let token: Option<&String> = matches.get_one("token");
+                    let set_default = *matches.get_one::<bool>("default").unwrap();
 
-                for (name, server) in config.servers {
-                    let is_default = config.default_server.as_ref().map_or(false, |x| x == &name);
-
-                    let default_marker = if is_default { "*" } else { " " };
-                    let token = server.token;
-                    let token_str = if show_tokens {
-                        if let Some(token) = &token {
-                            &token
-                        } else {
-                            ""
-                        }
-                    } else {
-                        "<has token>"
+                    let mut server = match config.servers.get(name) {
+                        Some(server) => server.clone(),
+                        None => return Err(anyhow!("server config not found, maybe add first?")),
                     };
 
-                    println!("{}{:16} {} {}", default_marker, name, server.url, token_str);
+                    let was_default = config
+                        .default_server
+                        .as_ref()
+                        .map_or(false, |x| &x == &name);
+
+                    if let Some(url) = url {
+                        server.url = url.clone();
+                    }
+                    if let Some(token) = token {
+                        server.token = Some(token.clone());
+                    }
+
+                    let mut have_changes = false;
+                    if let Some(previous) = config.servers.insert(name.clone(), server.clone()) {
+                        if previous != server {
+                            println!("murdock-cli: updated server \"{name}\"");
+                            have_changes = true;
+                        }
+                    }
+
+                    if set_default && !was_default {
+                        println!("murdock-cli: set server \"{name}\" as default");
+                        config.default_server = Some(name.clone());
+                        have_changes = true;
+                    }
+
+                    if have_changes {
+                        config.to_file(&config_file)?;
+                    }
                 }
-            }
+                Some(("delete", matches)) => {
+                    let name: &String = matches.get_one("name").unwrap();
+                    if let Some(_) = config.servers.remove(name) {
+                        println!("murdock-cli: removed server \"{name}\"");
+                        if config
+                            .default_server
+                            .as_ref()
+                            .map_or(false, |x| &x == &name)
+                        {
+                            config.default_server = None;
+                        }
+
+                        config.to_file(&config_file)?;
+                    }
+                }
+                Some(("list", matches)) => {
+                    let show_tokens = *matches.get_one::<bool>("show_tokens").unwrap();
+
+                    for (name, server) in config.servers {
+                        let is_default =
+                            config.default_server.as_ref().map_or(false, |x| x == &name);
+
+                        let default_marker = if is_default { "*" } else { " " };
+                        let token = server.token;
+                        let token_str = if show_tokens {
+                            if let Some(token) = &token {
+                                &token
+                            } else {
+                                ""
+                            }
+                        } else {
+                            "<has token>"
+                        };
+
+                        println!("{}{:16} {} {}", default_marker, name, server.url, token_str);
+                    }
+                }
+                _ => {}
+            },
+            Some(("jobs", matches)) => match matches.subcommand() {
+                Some(("delete", matches)) => {
+                    use chrono::{Duration, Local, NaiveDate};
+                    let before: Option<&String> = matches.get_one("before");
+                    let age: Option<&String> = matches.get_one("age");
+
+                    let before_date = if let Some(date) = before {
+                        NaiveDate::parse_from_str(date, "%Y-%m-%d")
+                            .context("parsing date (expecting %Y-%m-%d)")?
+                    } else {
+                        let age = i64::from_str_radix(age.unwrap(), 10)
+                            .context("converting age (expecting number of days)")?;
+                        Local::now()
+                            .date_naive()
+                            .checked_sub_signed(Duration::days(age))
+                            .unwrap()
+                    };
+
+                    let (_server_name, server) = get_server(&config, &matches)?;
+                    let token = server.token.clone();
+                    let murdock = if let Some(token) = token {
+                        murdock::Murdock::new(&server.url, Some(token.as_str()))
+                    } else {
+                        murdock::Murdock::new(&server.url, None)
+                    };
+
+                    let res = murdock.jobs_delete(before_date).await?;
+                    println!("murdock-cli: deleted {} jobs", res.len());
+                }
+                _ => {}
+            },
+            Some(("job", matches)) => match matches.subcommand() {
+                Some(("abort", matches)) => {
+                    let uuid: Option<&String> = matches.get_one("uuid");
+                    let uuid = uuid.expect("uuid required by clap");
+
+                    let (_server_name, server) = get_server(&config, &matches)?;
+                    let token = server.token.clone();
+                    let murdock = if let Some(token) = token {
+                        murdock::Murdock::new(&server.url, Some(token.as_str()))
+                    } else {
+                        murdock::Murdock::new(&server.url, None)
+                    };
+
+                    murdock.job_abort(uuid).await?;
+                    println!("murdock-cli: cancelled job");
+                }
+                _ => {}
+            },
             _ => {}
-        },
-        Some(("jobs", matches)) => match matches.subcommand() {
-            Some(("delete", matches)) => {
-                use chrono::{Duration, Local, NaiveDate};
-                let before: Option<&String> = matches.get_one("before");
-                let age: Option<&String> = matches.get_one("age");
+        }
+        Ok(())
+    }
 
-                let before_date = if let Some(date) = before {
-                    NaiveDate::parse_from_str(date, "%Y-%m-%d")
-                        .context("parsing date (expecting %Y-%m-%d)")?
-                } else {
-                    let age = i64::from_str_radix(age.unwrap(), 10)
-                        .context("converting age (expecting number of days)")?;
-                    Local::now()
-                        .date_naive()
-                        .checked_sub_signed(Duration::days(age))
-                        .unwrap()
-                };
-
-                let (_server_name, server) = get_server(&config, &matches)?;
-                let token = server.token.clone();
-                let murdock = if let Some(token) = token {
-                    murdock::Murdock::new(&server.url, Some(token.as_str()))
-                } else {
-                    murdock::Murdock::new(&server.url, None)
-                };
-
-                let res = murdock.jobs_delete(before_date).await?;
-                println!("murdock-cli: deleted {} jobs", res.len());
-            }
-            _ => {}
-        },
-        _ => {}
+    if let Err(e) = doit(matches, config, config_file).await {
+        eprintln!("{e}");
     }
 
     Ok(())
