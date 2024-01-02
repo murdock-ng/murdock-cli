@@ -37,4 +37,15 @@ impl Murdock {
         )
         .await
     }
+
+    pub async fn job_abort(
+        &self,
+        uuid: &str,
+    ) -> std::result::Result<
+        murdock_api::models::JobModel,
+        murdock_api::apis::Error<murdock_api::apis::job_api::JobRemoveHandlerJobUidDeleteError>,
+    > {
+        use murdock_api::apis::job_api::job_remove_handler_job_uid_delete;
+        job_remove_handler_job_uid_delete(&self.configuration, uuid).await
+    }
 }
