@@ -12,7 +12,7 @@ readme = "README.md"
 
 [dependencies]
 anyhow = "1.0.82"
-chrono = "0.4.37"
+chrono = "0.4.38"
 clap = { version = "4.5.4", features = ["cargo", "env"] }
 derive_builder = "0.20.0"
 indexmap = { version = "2.2.6", features = ["serde"] }
