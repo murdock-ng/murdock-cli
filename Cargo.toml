@@ -13,7 +13,7 @@ readme = "README.md"
 [dependencies]
 anyhow = "1.0.98"
 chrono = "0.4.41"
-clap = { version = "4.5.37", features = ["cargo", "env"] }
+clap = { version = "4.5.38", features = ["cargo", "env"] }
 derive_builder = "0.20.1"
 indexmap = { version = "2.9.0", features = ["serde"] }
 murdock-api = { version = "1.0.0", path = "./murdock-api" }
