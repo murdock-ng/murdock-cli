@@ -15,7 +15,7 @@ anyhow = "1.0.99"
 chrono = "0.4.42"
 clap = { version = "4.5.47", features = ["cargo", "env"] }
 derive_builder = "0.20.1"
-indexmap = { version = "2.10.0", features = ["serde"] }
+indexmap = { version = "2.11.1", features = ["serde"] }
 murdock-api = { version = "1.0.0", path = "./murdock-api" }
 platform-dirs = "0.3.0"
 reqwest = { version = "0.12.23", features = ["blocking"] }
