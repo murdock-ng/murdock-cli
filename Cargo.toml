@@ -19,6 +19,6 @@ indexmap = { version = "2.11.4", features = ["serde"] }
 murdock-api = { version = "1.0.0", path = "./murdock-api" }
 platform-dirs = "0.3.0"
 reqwest = { version = "0.12.23", features = ["blocking"] }
-serde = { version = "1.0.225", features = ["derive"] }
+serde = { version = "1.0.227", features = ["derive"] }
 serde_yaml = "0.9.34"
 tokio = { version = "1.45.1", features = ["full"] }
